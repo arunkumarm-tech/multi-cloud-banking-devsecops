@@ -34,10 +34,11 @@ Set up the GitHub repo, folder structure and AWS account safety before writing a
 - All folders, `.gitignore`, `README.md` and `PROGRESS.md` are visible on GitHub
 - All 4 overlays are present: aws-dev, aws-prod, azure-prod, gcp-prod
 
-## Phase 0 checks (pending)
-- [ ] `protect-main` ruleset is Active (PR required, no force push, no deletion)
-- [ ] MFA is on for the root user and the admin user
-- [ ] Budget includes taxes, with alerts at 50% / 80% / 100% forecast
+## Phase 0 checks (completed)
+- [x] `protect-main` ruleset Active (PR required, no force push, no deletion)
+- [x] MFA enabled for root and `arun-devops` (console + MFA)
+- [x] Old unused access key deactivated
+- [x] Budget USD 20, tax included, alerts: actual 85% / actual 100% / forecast 100%, email verified
 
 ## What I learned
 - Freezing the blueprint first keeps the build focused

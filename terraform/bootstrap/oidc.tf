@@ -1,5 +1,5 @@
 locals {
-  gh_sub     = "repo:${var.github_repo}"
+  gh_sub     = var.github_oidc_sub_prefix
   iam_prefix = "arn:aws:iam::${local.account_id}"
   state_arn  = aws_s3_bucket.this["state"].arn
   backup_arn = aws_s3_bucket.this["backup"].arn
@@ -77,6 +77,7 @@ data "aws_iam_policy_document" "trust_ecr_push" {
 # ---------- Permissions boundary for every mcb-* workload role ----------
 
 data "aws_iam_policy_document" "workload_boundary" {
+  #checkov:skip=CKV_AWS_356:Region-locked, Deny guardrails and boundary; tighten with Access Analyzer after Phase 6
   statement {
     sid    = "WorkloadServicesInRegion"
     effect = "Allow"
@@ -85,7 +86,7 @@ data "aws_iam_policy_document" "workload_boundary" {
       "logs:*", "cloudwatch:*", "ssm:*", "ssmmessages:*", "ec2messages:*",
       "ecr:GetAuthorizationToken", "ecr:BatchGetImage", "ecr:GetDownloadUrlForLayer",
       "ecr:BatchCheckLayerAvailability", "ecr:DescribeImages", "ecr:DescribeRepositories",
-      "kms:Decrypt", "kms:DescribeKey", "kms:CreateGrant", "kms:GenerateDataKey*",
+      "kms:Decrypt", "kms:DescribeKey", "kms:GenerateDataKey*",
     ]
     resources = ["*"]
     condition {
@@ -114,6 +115,31 @@ data "aws_iam_policy_document" "workload_boundary" {
     effect    = "Allow"
     actions   = ["iam:CreateServiceLinkedRole"]
     resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:AWSServiceName"
+      values = [
+        "eks.amazonaws.com", "eks-nodegroup.amazonaws.com", "autoscaling.amazonaws.com",
+        "elasticloadbalancing.amazonaws.com", "spot.amazonaws.com",
+      ]
+    }
+  }
+
+  statement {
+    sid       = "KmsGrantsForAwsServicesOnly"
+    effect    = "Allow"
+    actions   = ["kms:CreateGrant"]
+    resources = ["*"]
+    condition {
+      test     = "Bool"
+      variable = "kms:GrantIsForAWSResource"
+      values   = ["true"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestedRegion"
+      values   = [var.region]
+    }
   }
 }
 
@@ -174,6 +200,7 @@ resource "aws_iam_role_policy" "gha_plan_guardrails" {
 # ---------- Role 2: mcb-gha-terraform (apply, protected environments only) ----------
 
 data "aws_iam_policy_document" "apply_infra" {
+  #checkov:skip=CKV_AWS_356:Region-locked, Deny guardrails and boundary; tighten with Access Analyzer after Phase 6
   statement {
     sid    = "RegionalInfra"
     effect = "Allow"
@@ -260,6 +287,7 @@ data "aws_iam_policy_document" "apply_infra" {
 }
 
 data "aws_iam_policy_document" "apply_iam" {
+  #checkov:skip=CKV_AWS_356:Region-locked, Deny guardrails and boundary; tighten with Access Analyzer after Phase 6
   statement {
     sid       = "IamRead"
     effect    = "Allow"

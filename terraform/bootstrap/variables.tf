@@ -21,3 +21,9 @@ variable "allowed_instance_types" {
   type        = list(string)
   default     = ["t3.medium", "t3.large", "t3a.medium", "t3a.large"]
 }
+
+variable "github_oidc_sub_prefix" {
+  description = "OIDC sub prefix GitHub sends (immutable owner and repo IDs)"
+  type        = string
+  default     = "repo:arunkumarm-tech@270752489/multi-cloud-banking-devsecops@1436622021"
+}

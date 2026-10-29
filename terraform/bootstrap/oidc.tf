@@ -1,5 +1,5 @@
 locals {
-  gh_sub     = "repo:${var.github_repo}"
+  gh_sub     = var.github_oidc_sub_prefix
   iam_prefix = "arn:aws:iam::${local.account_id}"
   state_arn  = aws_s3_bucket.this["state"].arn
   backup_arn = aws_s3_bucket.this["backup"].arn

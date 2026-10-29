@@ -21,12 +21,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Checkov scan (report-only for first run)
+      - name: Checkov scan (blocking)
         uses: bridgecrewio/checkov-action@v12
         with:
           directory: terraform
           framework: terraform
-          soft_fail: true
+          soft_fail: false
           quiet: true
 
   plan:

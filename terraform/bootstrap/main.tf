@@ -10,6 +10,13 @@ locals {
 }
 
 resource "aws_s3_bucket" "this" {
+  #checkov:skip=CKV_AWS_144:Lab budget - DR copy is cross-cloud (Azure Blob, GCS) in Phase 9, not S3 CRR
+  #checkov:skip=CKV_AWS_145:SSE-S3 AES256 encrypts at rest; customer KMS key cost deferred (USD 20 budget)
+  #checkov:skip=CKV_AWS_18:Bucket config changes covered by CloudTrail; access-log bucket deferred
+  #checkov:skip=CKV2_AWS_62:No consumer for S3 event notifications
+  #checkov:skip=CKV_AWS_21:False positive - versioning set via for_each resource, verified with s3api
+  #checkov:skip=CKV2_AWS_6:False positive - public access block set via for_each resource, verified with s3api
+  #checkov:skip=CKV2_AWS_61:False positive - lifecycle set via for_each resource
   for_each = local.buckets
   bucket   = each.value
 

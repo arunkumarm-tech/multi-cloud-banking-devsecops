@@ -16,7 +16,7 @@ jobs:
     name: checkov
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Checkov scan (blocking)
         uses: bridgecrewio/checkov-action@v12
@@ -43,15 +43,15 @@ jobs:
       run:
         working-directory: ${{ matrix.stack }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: 1.14.5
           terraform_wrapper: false
 
       - name: AWS login via OIDC (read-only plan role)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/mcb-gha-plan
           role-session-name: iac-scan-pr-${{ github.event.pull_request.number }}

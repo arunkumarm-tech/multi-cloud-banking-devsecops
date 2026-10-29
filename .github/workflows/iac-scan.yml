@@ -1,0 +1,78 @@
+name: iac-scan
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "terraform/**"
+      - ".github/workflows/iac-scan.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: iac-scan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  checkov:
+    name: checkov
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkov scan (report-only for first run)
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform
+          framework: terraform
+          soft_fail: true
+          quiet: true
+
+  plan:
+    name: plan (${{ matrix.stack }})
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        stack:
+          - terraform/bootstrap
+          - terraform/aws/network
+    defaults:
+      run:
+        working-directory: ${{ matrix.stack }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.5
+          terraform_wrapper: false
+
+      - name: AWS login via OIDC (read-only plan role)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/mcb-gha-plan
+          role-session-name: iac-scan-pr-${{ github.event.pull_request.number }}
+          aws-region: us-east-1
+
+      - name: Prove identity
+        run: aws sts get-caller-identity --query Arn --output text
+
+      - name: Terraform init
+        run: terraform init -input=false -backend-config="bucket=mcb-tfstate-${{ secrets.AWS_ACCOUNT_ID }}"
+
+      - name: Terraform fmt and validate
+        run: |
+          terraform fmt -check -recursive
+          terraform validate -no-color
+
+      - name: Terraform plan
+        run: |
+          terraform plan -input=false -no-color -out=tfplan | tee plan.txt
+          echo "### ${{ matrix.stack }}" >> "$GITHUB_STEP_SUMMARY"
+          grep -E '^(Plan:|No changes)' plan.txt >> "$GITHUB_STEP_SUMMARY" || true
